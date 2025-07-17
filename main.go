@@ -12,9 +12,12 @@ import (
 
 func main() {
 	// Carrega as variáveis de ambiente do .env
+	// Load env vars from .env file
 	godotenv.Load()
 
-	http.HandleFunc("/weather", handlers.WeatherHandler)
+	weatherHandler := handlers.NewWeatherHandler()
+
+	http.HandleFunc("/weather", weatherHandler.WeatherHandlerFunc())
 
 	port := os.Getenv("PORT")
 	if port == "" {
