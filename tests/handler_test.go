@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"post-graduation-exercise-cloud-run-weather-api/handlers"
 	"post-graduation-exercise-cloud-run-weather-api/models"
@@ -136,5 +137,50 @@ func TestWeatherHandlerCepNotFound(t *testing.T) {
 
 	// Assert response body
 	expectedResponse := `{"error": "can not find zipcode"}`
+	assert.JSONEq(t, expectedResponse, rr.Body.String())
+}
+
+func TestWeatherHandlerInternalServerError(t *testing.T) {
+	cep := "12345678"
+	chBrasilAPI := make(chan models.Location)
+	chViaCEP := make(chan models.Location)
+	mockApiClient := new(MockApiClient)
+	weatherService := new(MockWeatherService)
+	locationService := services.NewLocationService(weatherService)
+	handler := handlers.NewWeatherHandler(locationService, weatherService, &shared.TemperatureConverter{}, chBrasilAPI, chViaCEP)
+
+	// mock CEP Responses
+	mockApiClient.On("Get", fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", cep)).
+		Return(&http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewReader([]byte(`{"cep": "12345678","state": "SP","city": "São Paulo","neighborhood": "SP","street": "Rua XV de Novembro","service": "ViaCEP"}`))),
+		}, nil)
+	mockApiClient.On("Get", fmt.Sprintf("http://viacep.com.br/ws/%s/json", cep)).
+		Return(&http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewReader([]byte(`{"cep": "12345678","logradouro": "Rua XV de Novembro","complemento": "Apto 101","unidade": "Unidade 2","bairro": "Centro","localidade": "SP","uf": "SP","estado": "São Paulo","regiao": "Sudeste","ibge": "3550308","gia": "1004","ddd": "11","siafi": "1234"}`))),
+		}, nil)
+
+	weatherService.On("GetTemperature", mock.Anything).Return(0.0, fmt.Errorf("Error Getting Temperature")).Once()
+	weatherService.On("GetClient", mock.Anything).Return(mockApiClient)
+
+	// Create a mock HTTP request
+	req, err := http.NewRequest("GET", fmt.Sprintf("/weather?cep=%s", cep), nil)
+	assert.NoError(t, err)
+
+	// Create a response recorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Create a handler function
+	handlerFunc := handler.WeatherHandlerFunc()
+
+	// Call the handler
+	handlerFunc.ServeHTTP(rr, req)
+
+	// Assert status code
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	// Assert response body
+	expectedResponse := `{"error": "failed to get temperature"}`
 	assert.JSONEq(t, expectedResponse, rr.Body.String())
 }
