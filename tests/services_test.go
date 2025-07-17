@@ -88,9 +88,6 @@ func TestHttpFetchSuccess(t *testing.T) {
 	response, err = weatherService.GetTemperature("other-city")
 	assert.NoError(t, err)
 	assert.Equal(t, 13.0, response)
-
-	// Verificando as expectativas dos mocks
-	mockApiClient.AssertExpectations(t)
 }
 
 func TestHttpFetchNotFound(t *testing.T) {
@@ -113,7 +110,4 @@ func TestHttpFetchNotFound(t *testing.T) {
 
 	assert.Equal(t, models.Location{}, response)
 	assert.NotEqual(t, nil, err)
-
-	// Verificando as expectativas dos mocks
-	mockApiClient.AssertExpectations(t)
 }

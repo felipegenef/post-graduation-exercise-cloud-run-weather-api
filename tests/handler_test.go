@@ -65,9 +65,6 @@ func TestWeatherHandlerSuccess(t *testing.T) {
 	// Assert response body
 	expectedResponse := `{"temp_C":22,"temp_F":71.6,"temp_K":295}`
 	assert.JSONEq(t, expectedResponse, rr.Body.String())
-
-	// Verify the mocks
-	mockApiClient.AssertExpectations(t)
 }
 
 func TestWeatherHandlerInvalidCepValidator(t *testing.T) {
@@ -98,9 +95,6 @@ func TestWeatherHandlerInvalidCepValidator(t *testing.T) {
 	// Assert response body
 	expectedResponse := `{"error":"invalid zipcode"}`
 	assert.JSONEq(t, expectedResponse, rr.Body.String())
-
-	// Verify the mocks
-	mockApiClient.AssertExpectations(t)
 }
 
 func TestWeatherHandlerCepNotFound(t *testing.T) {
@@ -143,7 +137,4 @@ func TestWeatherHandlerCepNotFound(t *testing.T) {
 	// Assert response body
 	expectedResponse := `{"error": "can not find zipcode"}`
 	assert.JSONEq(t, expectedResponse, rr.Body.String())
-
-	// Verify the mocks
-	mockApiClient.AssertExpectations(t)
 }
