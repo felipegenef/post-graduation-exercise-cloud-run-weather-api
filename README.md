@@ -52,6 +52,9 @@ curl https://api-endpoint/weather?cep=12345678
 
 # Weather API - Golang (Versão em Português acima)
 
+![Test Coverage](https://codecov.io/gh/felipegenef/post-graduation-exercise-cloud-run-weather-api/branch/main/graph/badge.svg)
+![Test Status](https://github.com/felipegenef/post-graduation-exercise-cloud-run-weather-api/actions/workflows/go.yaml/badge.svg)
+
 ## Description
 
 This project is an API developed as part of a postgraduate exercise in Golang. The API queries two external sources to obtain location information based on a **ZIP code (CEP)** and returns the current temperature of the corresponding city. The request is made simultaneously using two external APIs: **BrasilAPI** and **ViaCEP**, and after validating the ZIP code, the temperature is fetched from a weather API. The temperature is converted into **Celsius**, **Fahrenheit**, and **Kelvin**.
