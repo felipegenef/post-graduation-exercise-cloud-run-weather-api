@@ -47,7 +47,7 @@ Este projeto é uma API desenvolvida como parte de um exercício de pós-gradua�
 A API está hospedada no **Google Cloud Run** e pode ser acessada através do endpoint:
 
 ```bash
-curl https://api-endpoint/weather?cep=12345678
+curl https://weather-api-76fmx4exrq-uc.a.run.app/weather?cep=01025020
 ```
 
 # Weather API - Golang (Versão em Português acima)
@@ -99,5 +99,5 @@ This project is an API developed as part of a postgraduate exercise in Golang. T
 The API is hosted on **Google Cloud Run** and can be accessed via the endpoint:
 
 ```bash
-curl https://api-endpoint/weather?cep=12345678
+curl https://weather-api-76fmx4exrq-uc.a.run.app/weather?cep=01025020
 ```

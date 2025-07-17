@@ -13,6 +13,7 @@ RUN GOOS=linux go build -ldflags="-w -s" -o ./main main.go
 
 FROM scratch
 
+COPY .env /app/.env
 
 WORKDIR "/app"
 COPY --from=build /build/main /app

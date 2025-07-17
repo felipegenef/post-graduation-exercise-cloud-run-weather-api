@@ -72,7 +72,7 @@ func main() {
 	// Obtém o número da porta da variável de ambiente, padrão para "8080" se não estiver definida
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "80" // Default port if not provided
+		port = "8080" // Default port if not provided
 	}
 
 	// Log the port the server is running on
