@@ -16,30 +16,23 @@ type WeatherHandler struct {
 	WeatherService       services.WeatherService
 	CepValidator         *shared.CepValidator
 	TemperatureConverter *shared.TemperatureConverter
-	ChBrasilAPI          chan models.Location
-	ChViaCEP             chan models.Location
 }
 
 // NewWeatherHandler creates and returns a new WeatherHandler with everything initialized
-func NewWeatherHandler() *WeatherHandler {
+func NewWeatherHandler(
+	locationService services.LocationService,
+	weatherService services.WeatherService,
+	temperatureConverter *shared.TemperatureConverter,
+	chBrasilAPI, chViaCEP chan models.Location,
+
+) *WeatherHandler {
 	// Initialize channels for fetching location data
-	chBrasilAPI := make(chan models.Location)
-	chViaCEP := make(chan models.Location)
-	client := &http.Client{}
-	cepValidator := shared.NewCepValidator(`^\d{8}$`) // Example CEP regex pattern
-	temperatureConverter := &shared.TemperatureConverter{}
-	apiClient := &services.APIClientImpl{Client: client}
-	weatherService := services.NewWeatherService(apiClient)
-	// Initialize LocationService (depends on WeatherService)
-	locationService := services.NewLocationService(weatherService)
 
 	return &WeatherHandler{
 		LocationService:      locationService,
 		WeatherService:       weatherService,
-		CepValidator:         cepValidator,
+		CepValidator:         shared.NewCepValidator(`^\d{8}$`),
 		TemperatureConverter: temperatureConverter,
-		ChBrasilAPI:          chBrasilAPI,
-		ChViaCEP:             chViaCEP,
 	}
 }
 
@@ -47,24 +40,46 @@ func NewWeatherHandler() *WeatherHandler {
 func (h *WeatherHandler) WeatherHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cep := strings.TrimSpace(r.URL.Query().Get("cep"))
-
+		chBrasilAPI := make(chan models.Location)
+		chViaCEP := make(chan models.Location)
 		// Validate the CEP input
 		if !h.CepValidator.IsValidCep(cep) {
-			http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
+			response := models.ErrorResponse{
+				Error: "invalid zipcode",
+			}
+			// Set the HTTP status code to 422 (Unprocessable Entity)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+
+			// Encode the response into JSON and send it to the client
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 
 		// Fetch location data based on CEP, using channels to simulate multiple API responses
-		location, err := h.LocationService.GetLocationFromCEP(cep, h.ChBrasilAPI, h.ChViaCEP)
+		location, err := h.LocationService.GetLocationFromCEP(cep, chBrasilAPI, chViaCEP)
 		if err != nil || location.City == nil {
-			http.Error(w, "cannot find zipcode", http.StatusNotFound)
+			response := models.ErrorResponse{
+				Error: "can not find zipcode",
+			}
+			// Set the HTTP status code to 422 (Unprocessable Entity)
+			w.WriteHeader(http.StatusNotFound)
+
+			// Encode the response into JSON and send it to the client
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 
 		// Fetch temperature for the city
 		tempC, err := h.WeatherService.GetTemperature(*location.City)
 		if err != nil {
-			http.Error(w, "failed to get temperature", http.StatusInternalServerError)
+			response := models.ErrorResponse{
+				Error: "failed to get temperature",
+			}
+			// Set the HTTP status code to 422 (Unprocessable Entity)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			// Encode the response into JSON and send it to the client
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 

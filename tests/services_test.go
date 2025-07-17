@@ -15,43 +15,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockWeatherService com retorno fixo
-type MockWeatherService struct {
-	mock.Mock
-}
-
-func (m *MockWeatherService) GetTemperature(city string) (float64, error) {
-	args := m.Called(city)
-	return args.Get(0).(float64), args.Error(1)
-}
-
-func (m *MockWeatherService) GetClient() services.APIClient {
-	args := m.Called()
-	return args.Get(0).(services.APIClient)
-}
-
-// MockApiClient implementando o método Get
-type MockApiClient struct {
-	mock.Mock
-}
-
-// Mock do método Get com switch para URL
-func (m *MockApiClient) Get(url string) (*http.Response, error) {
-	args := m.Called(url)
-	return args.Get(0).(*http.Response), args.Error(1)
-}
-
-// MockLocationService simula a obtenção de localização
-type MockLocationService struct {
-	mock.Mock
-}
-
-// Simula a obtenção de localização a partir do CEP
-func (m *MockLocationService) GetLocationFromCEP(cep string, chBrasilAPI, chViaCEP chan models.Location) (models.Location, error) {
-	args := m.Called(cep, chBrasilAPI, chViaCEP)
-	return args.Get(0).(models.Location), args.Error(1)
-}
-
 func TestRaceFetch(t *testing.T) {
 	mockLocationService := new(MockLocationService)
 
@@ -99,10 +62,10 @@ func TestRaceFetch(t *testing.T) {
 	mockLocationService.AssertExpectations(t)
 }
 
-func TestHttpFetch(t *testing.T) {
+func TestHttpFetchSuccess(t *testing.T) {
 	mockApiClient := new(MockApiClient)
 	apiKey := os.Getenv("WEATHER_API_KEY")
-	locationService := services.NewWeatherService(mockApiClient)
+	weatherService := services.NewWeatherService(mockApiClient)
 
 	// Mock do retorno do método Get
 	mockApiClient.On("Get", fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%v&q=SP", apiKey)).
@@ -117,14 +80,39 @@ func TestHttpFetch(t *testing.T) {
 	}, nil).Once()
 
 	// Teste para a URL "SP"
-	response, err := locationService.GetTemperature("SP")
+	response, err := weatherService.GetTemperature("SP")
 	assert.NoError(t, err)
 	assert.Equal(t, 13.14, response)
 
 	// Teste para a URL "other-city" (outro valor)
-	response, err = locationService.GetTemperature("other-city")
+	response, err = weatherService.GetTemperature("other-city")
 	assert.NoError(t, err)
 	assert.Equal(t, 13.0, response)
+
+	// Verificando as expectativas dos mocks
+	mockApiClient.AssertExpectations(t)
+}
+
+func TestHttpFetchNotFound(t *testing.T) {
+	cep := "11111111"
+	chBrasilAPI := make(chan models.Location)
+	chViaCEP := make(chan models.Location)
+	mockApiClient := new(MockApiClient)
+	weatherService := services.NewWeatherService(mockApiClient)
+	locationService := services.NewLocationService(weatherService)
+
+	// Mock do retorno do método Get
+	mockApiClient.On("Get", mock.Anything).
+		Return(&http.Response{
+			StatusCode: 404,
+			Body:       io.NopCloser(bytes.NewReader([]byte(`{"message":"Todos os serviços de CEP retornaram erro.","type":"service_error","name":"CepPromiseError","errors":[{"name":"ServiceError","message":"A autenticacao de null falhou!","service":"correios"},{"name":"ServiceError","message":"Cannot read properties of undefined (reading 'replace')","service":"viacep"},{"name":"ServiceError","message":"Erro ao se conectar com o serviço WideNet.","service":"widenet"},{"name":"ServiceError","message":"Erro ao se conectar com o serviço dos Correios Alt.","service":"correios-alt"}]}`))),
+		}, nil)
+
+		// Teste para a URL "SP"
+	response, err := locationService.GetLocationFromCEP(cep, chBrasilAPI, chViaCEP)
+
+	assert.Equal(t, models.Location{}, response)
+	assert.NotEqual(t, nil, err)
 
 	// Verificando as expectativas dos mocks
 	mockApiClient.AssertExpectations(t)

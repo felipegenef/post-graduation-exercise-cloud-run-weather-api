@@ -72,14 +72,12 @@ func (ws *WeatherServiceImpl) GetTemperature(city string) (float64, error) {
 
 	resp, err := ws.Client.Get(url)
 	if err != nil {
-		fmt.Printf("error fetching weather %v", err)
 		return 0, err
 	}
 	defer resp.Body.Close()
 
 	var weather models.WeatherResponse
 	if err := json.NewDecoder(resp.Body).Decode(&weather); err != nil {
-		fmt.Printf("error decoding weather %v", err)
 		return 0, err
 	}
 
@@ -120,7 +118,6 @@ func (ls *LocationServiceImpl) fetchFromBrasilAPI(cep string, ch chan models.Loc
 	url := fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", cep)
 	resp, err := ls.WeatherService.GetClient().Get(url) // Use GetClient to avoid casting
 	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Printf("error fetching brasil api %v", err)
 		ch <- models.Location{}
 		return
 	}
@@ -128,7 +125,6 @@ func (ls *LocationServiceImpl) fetchFromBrasilAPI(cep string, ch chan models.Loc
 
 	var address models.BrasilAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&address); err != nil {
-		fmt.Printf("error decoding brasil api %v", err)
 		ch <- models.Location{}
 		return
 	}
@@ -146,7 +142,6 @@ func (ls *LocationServiceImpl) fetchFromViaCEP(cep string, ch chan models.Locati
 	url := fmt.Sprintf("http://viacep.com.br/ws/%s/json", cep)
 	resp, err := ls.WeatherService.GetClient().Get(url) // Use GetClient to avoid casting
 	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Printf("error fetching viacep api %v", err)
 		ch <- models.Location{}
 		return
 	}
@@ -154,7 +149,6 @@ func (ls *LocationServiceImpl) fetchFromViaCEP(cep string, ch chan models.Locati
 
 	var address models.ViaCEPResponse
 	if err := json.NewDecoder(resp.Body).Decode(&address); err != nil {
-		fmt.Printf("error decoding viacep api %v", err)
 		ch <- models.Location{}
 		return
 	}

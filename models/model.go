@@ -61,6 +61,10 @@ type TemperatureResponse struct {
 	Kelvin     float64 `json:"temp_K"`
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 // Structs para as respostas das APIs
 // Struct to hold the response from ViaCEP API
 type ViaCEPResponse struct {
